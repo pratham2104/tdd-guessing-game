@@ -1,23 +1,23 @@
 package game;
+
 import java.util.Scanner;
 
-/**
- * Minimal console UI that delegates all rules to GuessingGame.
- * Keeps I/O out of core logic, which is what we test with JUnit.
- */
 public class Main {
+
+    /** Entry point for console play. */
     public static void main(String[] args) {
         try (Scanner in = new Scanner(System.in)) {
             System.out.println("🎯 TDD Guessing Game (1–100)");
-            GuessingGame game = new GuessingGame(); // RNG source, default range
+            GuessingGame game = new GuessingGame();
 
             while (!game.isFinished()) {
                 System.out.print("Enter a number (" + game.getMin() + "-" + game.getMax() + "): ");
                 String line = in.nextLine().trim();
 
                 int guess;
-                try { guess = Integer.parseInt(line); }
-                catch (NumberFormatException e) {
+                try {
+                    guess = Integer.parseInt(line);
+                } catch (NumberFormatException e) {
                     System.out.println("Please enter a valid integer.");
                     continue;
                 }
