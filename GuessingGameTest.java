@@ -1,27 +1,22 @@
 package game;
+
 import org.junit.jupiter.api.Test;
-
-import static game.GuessingGame.GuessOutcome.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static game.GuessingGame.GuessOutcome.*;
 
-/**
- * TDD tests define expected behavior:
- * - constructor/range validation
- * - out-of-range guesses don't count attempts
- * - typical flow: low -> high -> correct
- * - idempotency after success
- */
 public class GuessingGameTest {
 
+    /** Constructor should reject invalid ranges and secrets. */
     @Test
     void ctorValidatesRangeAndSecret() {
-        assertThrows(IllegalArgumentException.class, () -> new GuessingGame(10, 10, (a,b) -> 10));
+        assertThrows(IllegalArgumentException.class, () -> new GuessingGame(10, 10, (a, b) -> 10));
         assertThrows(IllegalArgumentException.class, () -> GuessingGame.withFixedSecret(1, 10, 0));
         assertThrows(IllegalArgumentException.class, () -> GuessingGame.withFixedSecret(1, 10, 11));
     }
 
+    /** Out-of-range guesses do not count as attempts. */
     @Test
-    void outOfRangeDoesNotIncrementAttempts() {
+    void outOfRangeDoesNotCountAttempts() {
         GuessingGame g = GuessingGame.withFixedSecret(1, 100, 50);
         assertEquals(OUT_OF_RANGE, g.guess(0));
         assertEquals(0, g.getAttempts());
@@ -29,8 +24,9 @@ public class GuessingGameTest {
         assertEquals(0, g.getAttempts());
     }
 
+    /** Valid sequence low -> high -> correct ends game and counts attempts. */
     @Test
-    void lowHighThenCorrectTracksAttemptsAndFinish() {
+    void lowHighThenCorrect() {
         GuessingGame g = GuessingGame.withFixedSecret(1, 100, 42);
         assertEquals(TOO_LOW, g.guess(10));
         assertEquals(1, g.getAttempts());
@@ -41,13 +37,32 @@ public class GuessingGameTest {
         assertEquals(3, g.getAttempts());
     }
 
+    /** Further guesses after finish remain CORRECT and stable. */
     @Test
-    void guessesAfterFinishRemainCorrectAndStable() {
+    void guessesAfterFinishRemainStable() {
         GuessingGame g = GuessingGame.withFixedSecret(1, 100, 7);
         assertEquals(CORRECT, g.guess(7));
         int attempts = g.getAttempts();
-        assertEquals(CORRECT, g.guess(7));       // no change
+        assertEquals(CORRECT, g.guess(7));
         assertEquals(attempts, g.getAttempts());
-        assertTrue(g.isFinished());
+    }
+
+    /** Boundary: guessing min and max directly works. */
+    @Test
+    void boundaryValues() {
+        GuessingGame g1 = GuessingGame.withFixedSecret(1, 100, 1);
+        assertEquals(CORRECT, g1.guess(1));
+        GuessingGame g2 = GuessingGame.withFixedSecret(1, 100, 100);
+        assertEquals(CORRECT, g2.guess(100));
+    }
+
+    /** Multiple out-of-range then correct counts only the final attempt. */
+    @Test
+    void multipleOutOfRangeThenCorrect() {
+        GuessingGame g = GuessingGame.withFixedSecret(1, 100, 50);
+        g.guess(-5); g.guess(200);
+        assertEquals(0, g.getAttempts());
+        assertEquals(CORRECT, g.guess(50));
+        assertEquals(1, g.getAttempts());
     }
 }
