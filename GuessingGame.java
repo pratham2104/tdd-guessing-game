@@ -1,26 +1,25 @@
 package game;
+
 import java.util.Random;
 
-/**
- * Pure game logic for a 1..100 guessing game (no I/O).
- * TDD-friendly: deterministic via withFixedSecret(), injectable NumberSource,
- * and small, explicit outcomes for each guess.
- */
 public class GuessingGame {
 
-    /** Outcome of a single guess: simple and type-safe. */
+    /** Result of a single guess. */
     public enum GuessOutcome { TOO_LOW, TOO_HIGH, CORRECT, OUT_OF_RANGE }
 
-    /** Abstraction for secret generation; default is Random-backed. */
+    /** Functional interface for secret number providers. */
+    @FunctionalInterface
     public interface NumberSource {
         int nextSecret(int minInclusive, int maxInclusive);
 
-        /** Default RNG-backed implementation. */
+        /** RNG-backed implementation used by default. */
         class RandomNumberSource implements NumberSource {
             private final Random rnd;
             public RandomNumberSource() { this(new Random()); }
             public RandomNumberSource(Random rnd) { this.rnd = rnd; }
-            @Override public int nextSecret(int min, int max) {
+
+            @Override
+            public int nextSecret(int min, int max) {
                 if (min > max) throw new IllegalArgumentException("min > max");
                 return rnd.nextInt((max - min) + 1) + min; // inclusive
             }
@@ -29,17 +28,21 @@ public class GuessingGame {
 
     public static final int DEFAULT_MIN = 1, DEFAULT_MAX = 100;
 
-    private final int min, max, secret; // immutable config + answer
-    private int attempts;               // counts only valid (in-range) guesses
-    private boolean finished;           // latched when CORRECT
+    private final int min, max, secret;
+    private int attempts;
+    private boolean finished;
 
-    /** Default 1..100 range using RNG source. */
-    public GuessingGame() { this(DEFAULT_MIN, DEFAULT_MAX, new NumberSource.RandomNumberSource()); }
+    /** Default constructor: 1..100 with RNG source. */
+    public GuessingGame() {
+        this(DEFAULT_MIN, DEFAULT_MAX, new NumberSource.RandomNumberSource());
+    }
 
-    /** Inject a custom source (useful for seeding or testing). */
-    public GuessingGame(NumberSource src) { this(DEFAULT_MIN, DEFAULT_MAX, src); }
+    /** Create game with a custom source (useful for seeded RNG). */
+    public GuessingGame(NumberSource src) {
+        this(DEFAULT_MIN, DEFAULT_MAX, src);
+    }
 
-    /** Custom range + source (kept small but validated). */
+    /** Create game with a custom range and source. */
     public GuessingGame(int min, int max, NumberSource src) {
         if (src == null) throw new IllegalArgumentException("NumberSource required");
         if (min >= max) throw new IllegalArgumentException("min must be < max");
@@ -47,29 +50,37 @@ public class GuessingGame {
         this.secret = src.nextSecret(min, max);
     }
 
-    /** Deterministic factory for unit tests. */
+    /** Factory for deterministic tests with fixed secret. */
     public static GuessingGame withFixedSecret(int min, int max, int fixed) {
         if (min >= max) throw new IllegalArgumentException("min must be < max");
         if (fixed < min || fixed > max) throw new IllegalArgumentException("secret out of range");
         return new GuessingGame(min, max, (a, b) -> fixed);
     }
 
-    /** Single step: apply a guess and return outcome. */
+    /** Apply a guess and return the outcome. */
     public GuessOutcome guess(int value) {
-        if (finished) return GuessOutcome.CORRECT;             // idempotent after win
-        if (value < min || value > max) return GuessOutcome.OUT_OF_RANGE; // no attempt count
+        if (finished) return GuessOutcome.CORRECT;
+        if (value < min || value > max) return GuessOutcome.OUT_OF_RANGE;
 
-        attempts++;                                            // only valid inputs count
-        if (value < secret)  return GuessOutcome.TOO_LOW;
-        if (value > secret)  return GuessOutcome.TOO_HIGH;
-        finished = true;                                       // exact hit
+        attempts++;
+        if (value < secret) return GuessOutcome.TOO_LOW;
+        if (value > secret) return GuessOutcome.TOO_HIGH;
+        finished = true;
         return GuessOutcome.CORRECT;
     }
 
-    // minimal API for UI/tests
-    public int getAttempts()  { return attempts; }
-    public boolean isFinished(){ return finished; }
-    public int getMin()       { return min; }
-    public int getMax()       { return max; }
-    int getSecret()           { return secret; } // package-private for diagnostics/tests
+    /** Get total valid attempts so far. */
+    public int getAttempts() { return attempts; }
+
+    /** Check if the game has ended. */
+    public boolean isFinished() { return finished; }
+
+    /** Get lower bound of the range. */
+    public int getMin() { return min; }
+
+    /** Get upper bound of the range. */
+    public int getMax() { return max; }
+
+    /** For diagnostics/tests only. */
+    int getSecret() { return secret; }
 }
