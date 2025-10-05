@@ -69,6 +69,21 @@ flowchart TD
   C -->|Guess > secret| F[Message: Too high] --> C
   C -->|Guess == secret| G[Message: Correct + attempts] --> H[End]
 ```
+```mermaid
+graph TD
+  A[Main.java] -->|User I/O| B[GuessingGame.java]
+  B -->|Tested by| C[GuessingGameTest.java]
+```
+---
+
+## ⚔️ Challenges & Solutions
+- **Challenge:** Setting up JUnit in Eclipse  
+  **Solution:** Added JUnit 5 to the Build Path and verified tests using the JUnit runner.  
+- **Challenge:** Lambda constructor errors with GuessingGame  
+  **Solution:** Defined a functional interface (`NumberSource`) to make lambdas compile cleanly.  
+- **Challenge:** Package/import issues  
+  **Solution:** Organized all classes under `package game;` for clarity and compatibility.
+  
 ---
 
 ## 📝 Reflection
